@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 def dparserfunc(date):
     return pd.datetime.strptime(date, '%Y/%m/%d %H:%M:%S')
 
@@ -18,10 +19,9 @@ def load_data_not_parse_time(path):
 
 def load_data_as_list(path):
     data = load_data(path)
-    result = {}
-    result.timestamps = np.asarray(data.index).tolist()
-    result.values = np.asarray(data.values).tolist()
-    return result
+    timestamps = np.asarray(data.index).tolist()
+    values = np.asarray(data.values).tolist()
+    return timestamps, values
 
 
 def data_it(raw_data, block_size = 5):
