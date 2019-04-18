@@ -1,5 +1,5 @@
 import numpy as np
-from timer import Timer
+from lib.timer import Timer
 import runners.data_loader as data_loader
 import matplotlib
 matplotlib.use('TkAgg')

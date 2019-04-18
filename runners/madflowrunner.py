@@ -1,6 +1,6 @@
 import runners.data_loader as data_loader
 from runners.mad import (get_confidence_band, get_mad_outlier)
-from timer import Timer
+from lib.timer import Timer
 from pandas import DataFrame
 import numpy as np
 
