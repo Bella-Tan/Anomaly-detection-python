@@ -9,8 +9,8 @@ SAMPLE_FILE_PATH = '../data/demo7.csv'
 
 if __name__ == '__main__':
     sw = Timer()
-    sw.start()
     data = data_loader.load_data(SAMPLE_FILE_PATH)
+    sw.start()
     edm_multi = breakout_detection.EdmMulti()
     max_snp = max(max(data.values), 1)
     # Z = [x/float(max_snp) for x in data.values]

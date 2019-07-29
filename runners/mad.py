@@ -1,44 +1,6 @@
 import numpy as np
 from scipy.stats import norm
 
-
-def mad_based_outlier(points, thresh=3.5):
-    if type(points) is list:
-        points = np.asarray(points)
-    if len(points.shape) == 1:
-        points = points[:, None]
-    med = np.median(points, axis=0)
-    abs_dev = np.absolute(points - med)
-
-    med_abs_dev = np.median(abs_dev)
-
-    mod_z_score = norm.ppf(0.75) * abs_dev / med_abs_dev
-    return mod_z_score > thresh
-
-
-def get_mad_outlier(points, thresh=3.5):
-    last_index = len(points) - 1
-
-    last_ts = points.index[last_index]
-    if type(points) is list:
-        points = np.asarray(points)
-    if len(points.shape) == 1:
-        points = points[:, None]
-    med = np.median(points, axis=0)
-    abs_dev = np.absolute(points - med)
-
-    med_abs_dev = np.median(abs_dev)
-
-    abs_dev_bounds = thresh * med_abs_dev / norm.ppf(0.75)
-    abs_upper = med + abs_dev_bounds
-    abs_lower = med - abs_dev_bounds
-
-    abs_upper = abs_upper[0] if abs_upper.size == 1 else None
-    abs_lower = abs_lower[0] if abs_lower.size == 1 else None
-
-    return abs_upper, abs_lower, points[last_index][0], last_ts, med
-
-
 def __apply_along_mean_or_median(function, values):
     try:
         return np.apply_along_axis(np.mean, 0, values)
@@ -46,7 +8,7 @@ def __apply_along_mean_or_median(function, values):
         raise e
 
 
-def __calculate(values, function, threshold=0.95):
+def __calculate(values, function=np.mean, threshold=0.99):
     try:
         values = [x for x in values if x is not None]
         if type(values) is not list:
@@ -84,7 +46,6 @@ def get_confidence_band(training_values, testing_values, function=np.mean, thres
             if result[0] != "NaN" and testing_values[i] < result[0] or \
                     result[1] != "NaN" and testing_values[i] > result[1]:
                 testing_values[i] = median
-
         return {
             "lower": lowers,
             "upper": uppers
@@ -92,3 +53,66 @@ def get_confidence_band(training_values, testing_values, function=np.mean, thres
 
     except BaseException as e:
         raise e
+
+
+def __calculate_mean_and_mad(values, threshold=0.99):
+    try:
+        values = [x for x in values if x is not None]
+        if type(values) is not list:
+            raise ValueError("Bad data format for training.")
+        if len(values) < 1:
+            return "NaN", "NaN"
+        mean = np.mean(values)
+        deviation = list(np.absolute(values - mean))
+        mad = np.mean(deviation)
+        thresh_mad = norm.ppf(threshold) * mad / threshold
+        return np.array(mean).tolist() * 1.0, mad, thresh_mad
+    except Exception as e:
+        raise e
+
+
+def get_confidence_band_with_historic(data_array, threshold=0.99):
+    try:
+        if type(data_array) is not list or data_array is None:
+            raise ValueError("bad request data.")
+        out = {}
+        for data in data_array:
+            if type(data["values"]) is list and len(data["values"]) > 1:
+                sum_mean = sum(data["values"])
+                out[data["uuid"]] = {
+                    "lower": "NaN",
+                    "upper": "NaN",
+                    "sumMean": sum_mean,
+                    "sumMad": 0,
+                    "sumMeanCache": sum_mean,
+                    "windowSize": data["windowSize"],
+                    "n": len(data["values"])
+                }
+            elif data["n"] is not None and data["sumMean"] is not None and data["sumMad"] is not None:
+                n = data["n"] + 1
+                sum_mean = data["sumMean"] + data["values"]
+                mean = sum_mean / n
+                sum_mad = data["sumMad"] + np.absolute(data["values"] - mean)
+                mad = sum_mad / (n - data["windowSize"])
+                thresh_mad = norm.ppf(threshold) * mad / threshold
+                sum_mean_cache = data["sumMeanCache"]
+                if n == data["windowSize"] * 2:
+                    n = data["windowSize"]
+                    sum_mean = data["sumMean"] - data["sumCache"]
+                    sum_mean_cache = sum_mean
+                    data["sumMad"] = 0
+                out[data["uuid"]] = {
+                    "lower": mean - thresh_mad,
+                    "upper": mean + thresh_mad,
+                    "sumMean": sum_mean,
+                    "sumMad": sum_mad,
+                    "sumMeanCache": sum_mean_cache,
+                    "windowSize": data["windowSize"],
+                    "n": n
+                }
+            else:
+                raise ValueError("bad request data.")
+        return out
+    except BaseException as e:
+        raise e
+
