@@ -12,8 +12,7 @@ def load_data(path):
 
 
 def load_data_not_parse_time(path):
-    data = pd.read_csv(path, index_col='timestamps', parse_dates=False, sep=',', usecols=['timestamps', 'values'],
-                   squeeze=True)
+    data = pd.read_csv(path, index_col='timestamps', parse_dates=False, sep=',', usecols=['timestamps', 'values'], squeeze=True)
     return data
 
 
